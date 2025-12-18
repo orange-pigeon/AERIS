@@ -1,71 +1,116 @@
-# AERIS
-**General Aviation Headset PoC**
+# ✈️ AERIS  
+**High-Fidelity General Aviation Headset – Proof of Concept**
 
 <div align="center">
-<img width="911" height="820" alt="OP-AERIS" src="https://github.com/user-attachments/assets/33ea24da-07fe-4eed-9816-3114d598dea0" />
+  <img width="911" height="820" alt="OP-AERIS" src="https://github.com/user-attachments/assets/33ea24da-07fe-4eed-9816-3114d598dea0" />
 </div>
 
-## Overview
-AERIS is a Proof-of-Concept (PoC) project developing a high-fidelity General Aviation (GA) headset. This project integrates advanced audio features, including Active Noise Cancellation (ANC), wireless connectivity, and specialized aviation recording capabilities, aiming to deliver a premium cockpit experience.
+---
 
-## Key Features
-- **Active Noise Cancellation (ANC)**: Advanced hybrid ANC system designed to attenuate cockpit noise.
-- **Bluetooth Connectivity**:
-  - **Music Streaming**: High-quality wireless audio.
-  - **Telephony**: Hands-free phone call support.
-  - **OTA Updates**: Over-the-air firmware update capability.
-  - **ATC Downloads**: Wireless transfer of recorded Air Traffic Control audio.
-- **ATC Recording**: Integrated system to record and store ATC communications.
+## 🧭 Overview
+**AERIS** is a Proof-of-Concept (PoC) project focused on developing a **premium General Aviation (GA) headset**.  
+The goal is to combine **audiophile-grade sound quality** with **aviation-specific functionality**, delivering an exceptional cockpit experience.
 
-## Hardware Specifications
-AERIS is built using high-end audio components to ensure superior sound quality and effective noise reduction.
+Key focus areas include:
+- High-performance **Active Noise Cancellation**
+- Seamless **wireless connectivity**
+- Integrated **ATC recording & playback**
 
-### Audio Drivers
-- **Model**: AH-D9200
-- **Type**: High-Fidelity Drivers
-- **Description**: Sourced from premium audiophile headphones to provide exceptional clarity and dynamic range for both communications and media.
+---
 
-### Microphone Configuration
-- **ANC Microphones**:
-  - **Sensor**: ICS-43434 (MEMS)
-  - **Configuration**: 4x Total (2 per earcup)
-  - **Placement**: 1x External (Feedforward), 1x Internal (Feedback) per cup for hybrid noise cancellation.
-- **Communications Microphone**:
-  - **Model**: PA-9EHN
-  - **Type**: Analog Electret
-  - **Application**: Noise-canceling pilot microphone designed for clarity in noisy aviation environments.
+## ✨ Key Features
 
+### 🎧 Active Noise Cancellation (ANC)
+- Advanced **hybrid ANC** architecture  
+- Feedforward + feedback microphones per earcup  
+- Optimized for continuous low-frequency cockpit noise
 
-## Test Phase Setup
-To validate the AERIS concept and tune the audio processing algorithms, a test phase is currently underway. This phase utilizes a custom-modified hardware platform designed to simulate the final acoustic environment and test the electronic components in a controlled setting.
+### 📡 Bluetooth Connectivity
+- 🎵 **Music Streaming (A2DP)**
+- 📞 **Telephony (HFP)** – hands-free calling
+- 🔄 **OTA Firmware Updates**
+- 📥 **ATC Audio Downloads** to mobile devices
 
-**Platform:**
-- **Chassis**: Modified **3M™ PELTOR™ Optime™ III** Earmuffs. Chosen for their high passive noise attenuation, providing an ideal baseline for testing ANC efficacy.
+### 🎙️ ATC Recording
+- Direct recording of ATC communications  
+- High-quality onboard storage for later review and analysis
 
-**Electronics & Audio Components:**
-- **Core Processing Unit**: **Teensy 4.1**. A powerful microcontroller capable of low-latency audio processing.
-- **Audio Interface**: **Teensy Audio Adaptor Board**. Provides the necessary CODEC and I/O interfaces for the Teensy platform.
-- **Speaker**: **4070 Speaker (4Ω, 3W)**. Selected to drive high-fidelity audio output within the earcup.
-- **Microphones**: **2x INMP441 MEMS Microphones (I2S)**. High-performance, omnidirectional digital microphones used for capturing environmental noise and internal audio for the feedback/feedforward ANC loops.
-- **Connectivity**: **Feasycom DB004-BT836B Bluetooth 5.0 Module**. Enables wireless audio streaming and data connectivity for the headset.
-- **Storage**: **64GB**. Included for extensive audio recording and data storage.
+---
 
-### Test Phase Roadmap
-The following milestones define the immediate focus of the test phase:
+## 🧩 Hardware Specifications
+AERIS is built around **high-end audio components** to ensure clarity, low distortion, and effective noise suppression.
 
-1. **Passive & Active Noise Cancellation Validation**:
-   - Establish baseline passive attenuation.
-   - Implement and tune the ANC algorithm for a single earcup to verify noise reduction performance before scaling to stereo.
+### 🔊 Audio Drivers
+- **Model**: AH-D9200  
+- **Type**: High-Fidelity Dynamic Drivers  
+- **Description**:  
+  Sourced from premium audiophile headphones to provide excellent dynamic range and intelligibility for both speech and media.
 
-2. **Direct ATC Recording**:
-   - Implement the audio pipeline to capture line-in audio (simulated ATC communications).
-   - Validate direct writing of high-fidelity audio data to the onboard 64GB storage.
+### 🎤 Microphone Configuration
 
-3. **Bluetooth Integration & Mobile Connectivity**:
-   - Enable the Feasycom module for standard phone pairing and HFP (Hands-Free Profile) support.
-   - Implement A2DP for high-quality audio streaming.
-   - Develop the mobile app interface to allow parameter tuning (ANC filters, EQ) and wireless downloading of stored ATC recordings.
+#### ANC Microphones
+- **Sensor**: ICS-43434 (MEMS)
+- **Configuration**: 4× total (2 per earcup)
+- **Placement**:
+  - 1× External (Feedforward)
+  - 1× Internal (Feedback)
 
-4. **T.B.D.**
-   - Future steps to be defined based on initial validation results.
+#### Communications Microphone
+- **Model**: PA-9EHN  
+- **Type**: Analog Electret  
+- **Purpose**:  
+  Aviation-grade noise-canceling pilot microphone optimized for high-noise environments.
 
+---
+
+## 🧪 Test Phase Setup
+To validate the AERIS concept and fine-tune the audio processing chain, a dedicated **test platform** is currently in use.
+
+### 🪖 Acoustic Platform
+- **Chassis**: **3M™ PELTOR™ Optime™ III** earmuffs  
+- **Rationale**:  
+  Excellent passive noise attenuation provides a stable baseline for ANC evaluation.
+
+### ⚙️ Electronics & Audio Components
+- 🧠 **Core MCU**: Teensy 4.1  
+  - High-performance microcontroller for low-latency DSP
+- 🎚️ **Audio Interface**: Teensy Audio Adaptor Board  
+  - Integrated CODEC and audio I/O
+- 🔈 **Speakers**: 4070 Speaker (4Ω, 3W)  
+- 🎙️ **Test Microphones**:  
+  - 2× INMP441 MEMS microphones (I2S)
+- 📶 **Wireless Module**:  
+  - Feasycom DB004-BT836B (Bluetooth 5.0)
+- 💾 **Storage**:  
+  - 64GB onboard storage for long-duration recordings
+
+---
+
+## 🗺️ Test Phase Roadmap
+
+### 1️⃣ Passive & Active Noise Cancellation
+- Measure baseline passive attenuation  
+- Implement ANC on a **single earcup**
+- Tune filters before scaling to stereo operation
+
+### 2️⃣ Direct ATC Recording
+- Implement line-in ATC audio capture  
+- Validate reliable, high-quality writes to onboard storage
+
+### 3️⃣ Bluetooth & Mobile Integration
+- Enable standard Bluetooth pairing
+- Implement:
+  - HFP (telephony)
+  - A2DP (music streaming)
+- Develop mobile interface for:
+  - ANC & EQ tuning
+  - Wireless download of recorded ATC audio
+
+### 4️⃣ 🚧 T.B.D.
+- Next steps to be defined based on validation results and test findings
+
+---
+
+## 🚀 Status
+> **Experimental / Proof of Concept**  
+> Hardware, firmware, and DSP algorithms are under active development.
