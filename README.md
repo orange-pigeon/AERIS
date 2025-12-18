@@ -34,3 +34,4 @@ AERIS is built using high-end audio components to ensure superior sound quality 
   - **Model**: PA-9EHN
   - **Type**: Analog Electret
   - **Application**: Noise-canceling pilot microphone designed for clarity in noisy aviation environments.
+
