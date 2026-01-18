@@ -1,116 +1,81 @@
-# ✈️ AERIS  
-**High-Fidelity General Aviation Headset – Proof of Concept**
+# AERIS Audio Platform
 
-<div align="center">
-  <img width="911" height="820" alt="OP-AERIS" src="https://github.com/user-attachments/assets/33ea24da-07fe-4eed-9816-3114d598dea0" />
-</div>
+A professional, 8-channel audio mixing and playback system designed for the **Teensy 4.1** using the **Teensy Audio Library**. AERIS features a custom side-chain ducking mixer, concurrent WAV playback from SD, and real-time serial command control.
 
 ---
 
-## 🧭 Overview
-**AERIS** is a Proof-of-Concept (PoC) project focused on developing a **premium General Aviation (GA) headset**.  
-The goal is to combine **audiophile-grade sound quality** with **aviation-specific functionality**, delivering an exceptional cockpit experience.
+## 🚀 Features
 
-Key focus areas include:
-- High-performance **Active Noise Cancellation**
-- Seamless **wireless connectivity**
-- Integrated **ATC recording & playback**
-
----
-
-## ✨ Key Features
-
-### 🎧 Active Noise Cancellation (ANC)
-- Advanced **hybrid ANC** architecture  
-- Feedforward + feedback microphones per earcup  
-- Optimized for continuous low-frequency cockpit noise
-
-### 📡 Bluetooth Connectivity
-- 🎵 **Music Streaming (A2DP)**
-- 📞 **Telephony (HFP)** – hands-free calling
-- 🔄 **OTA Firmware Updates**
-- 📥 **ATC Audio Downloads** to mobile devices
-
-### 🎙️ ATC Recording
-- Direct recording of ATC communications  
-- High-quality onboard storage for later review and analysis
+- **8-Channel Custom Mixer**: High-performance mixing with individual gain controls.
+- **Side-Chain Ducking**: Automate volume attenuation on any channel triggered by another (e.g., lower music when voice is active).
+- **Concurrent WAV Playback**: Pool of 4 independent players for playing multiple files from SD simultaneously.
+- **Timed Sine Generation**: Pool of 4 sine wave generators with precise frequency and duration control.
+- **Source Naming**: Assign human-readable labels to mixer slots for easy identification.
+- **Serial Interface**: Complete CLI for system configuration and real-time playback control.
 
 ---
 
-## 🧩 Hardware Specifications
-AERIS is built around **high-end audio components** to ensure clarity, low distortion, and effective noise suppression.
+## 🛠 Hardware Required
 
-### 🔊 Audio Drivers
-- **Model**: AH-D9200  
-- **Type**: High-Fidelity Dynamic Drivers  
-- **Description**:  
-  Sourced from premium audiophile headphones to provide excellent dynamic range and intelligibility for both speech and media.
-
-### 🎤 Microphone Configuration
-
-#### ANC Microphones
-- **Sensor**: ICS-43434 (MEMS)
-- **Configuration**: 4× total (2 per earcup)
-- **Placement**:
-  - 1× External (Feedforward)
-  - 1× Internal (Feedback)
-
-#### Communications Microphone
-- **Model**: PA-9EHN  
-- **Type**: Analog Electret  
-- **Purpose**:  
-  Aviation-grade noise-canceling pilot microphone optimized for high-noise environments.
+- **Teensy 4.1**
+- **Teensy Audio Shield (SGTL5000)**
+- **SD Card** (containing `.wav` files at 44.1kHz, 16-bit mono/stereo)
+- **Audio Output**: 3.5mm jack or speakers connected to the shield.
 
 ---
 
-## 🧪 Test Phase Setup
-To validate the AERIS concept and fine-tune the audio processing chain, a dedicated **test platform** is currently in use.
+## ⌨️ Serial Command Interface
 
-### 🪖 Acoustic Platform
-- **Chassis**: **3M™ PELTOR™ Optime™ III** earmuffs  
-- **Rationale**:  
-  Excellent passive noise attenuation provides a stable baseline for ANC evaluation.
+Connect via any serial monitor at **115200 baud**. Commands are case-insensitive.
 
-### ⚙️ Electronics & Audio Components
-- 🧠 **Core MCU**: Teensy 4.1  
-  - High-performance microcontroller for low-latency DSP
-- 🎚️ **Audio Interface**: Teensy Audio Adaptor Board  
-  - Integrated CODEC and audio I/O
-- 🔈 **Speakers**: 4070 Speaker (4Ω, 3W)  
-- 🎙️ **Test Microphones**:  
-  - 2× INMP441 MEMS microphones (I2S)
-- 📶 **Wireless Module**:  
-  - Feasycom DB004-BT836B (Bluetooth 5.0)
-- 💾 **Storage**:  
-  - 64GB onboard storage for long-duration recordings
+### **Playback Commands**
 
----
+| Command | Usage | Description |
+| :--- | :--- | :--- |
+| `PLAY` | `PLAY <filename>` | Starts a file (e.g., `1.wav`). It returns the assigned slot index. |
+| `PAUSE` | `PAUSE <index>` | Pauses playback on the specified WAV slot (0-3). |
+| `RESUME`| `RESUME <index>` | Resumes a specifically paused WAV slot. |
+| `STOP`  | `STOP <index>` | Stops a specific WAV slot. |
+| `STOP`  | `STOP ALL` | Stops all active WAV players. |
 
-## 🗺️ Test Phase Roadmap
+### **Signal Generation**
 
-### 1️⃣ Passive & Active Noise Cancellation
-- Measure baseline passive attenuation  
-- Implement ANC on a **single earcup**
-- Tune filters before scaling to stereo operation
+| Command | Usage | Description |
+| :--- | :--- | :--- |
+| `SINE` | `SINE <freq> <dur>` | Plays a tone (e.g., `SINE 440 1000` for 1s of A4). `dur=0` for infinite. |
 
-### 2️⃣ Direct ATC Recording
-- Implement line-in ATC audio capture  
-- Validate reliable, high-quality writes to onboard storage
+### **Mixer & Ducking**
 
-### 3️⃣ Bluetooth & Mobile Integration
-- Enable standard Bluetooth pairing
-- Implement:
-  - HFP (telephony)
-  - A2DP (music streaming)
-- Develop mobile interface for:
-  - ANC & EQ tuning
-  - Wireless download of recorded ATC audio
+| Command | Usage | Description |
+| :--- | :--- | :--- |
+| `GAIN` | `GAIN <slot> <val>`| Set slot volume (0.0 to 1.0). Mixer slots are 0-7. |
+| `SOURCES`| `SOURCES` | List all mixer slots and what device is assigned to them. |
+| `DUCK` | `DUCK <tgt> <ctrl> <gain> <thr> <att> <rel>` | Configure side-chain ducking. |
 
-### 4️⃣ 🚧 T.B.D.
-- Next steps to be defined based on validation results and test findings
+**Ducking Example:**
+`DUCK 0 4 0.1 0.05 20 1000`
+- **Target (0)**: The channel to be lowered (e.g., music).
+- **Control (4)**: The channel that triggers the drop (e.g., a test tone).
+- **Gain (0.1)**: Volume drops to 10% when triggered.
+- **Threshold (0.05)**: Sensitivity of the trigger.
+- **Attack/Release (20/1000)**: Speed of fade-down and fade-up in milliseconds.
 
 ---
 
-## 🚀 Status
-> **Experimental / Proof of Concept**  
-> Hardware, firmware, and DSP algorithms are under active development.
+## 📂 Project Structure
+
+- `src/main.cpp`: System entry point and audio patching.
+- `src/Mixer.cpp`: Core mixing logic and side-chain ducking implementation.
+- `src/WavPlayerManager.cpp`: Manages the pool of 4 SD players.
+- `src/SinePlayerManager.cpp`: Manages the pool of 4 sine generators.
+- `src/Commander.cpp`: Command parser and dispatcher.
+- `src/SerialHandler.cpp`: Line-buffered serial communication.
+
+---
+
+## 📋 Getting Started
+
+1.  **Format SD**: Ensure your SD card is FAT32.
+2.  **Add Files**: Place `.wav` files in the root directory.
+3.  **Upload**: Flash the firmware using PlatformIO or Arduino IDE.
+4.  **Monitor**: Open the Serial Monitor and type `HELP` to begin.
