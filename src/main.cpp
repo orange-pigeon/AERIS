@@ -28,12 +28,12 @@ AudioControlSGTL5000 audioShield;
 
 #pragma region Component Initialization
 Earcup earcupLeft; // Custom processing block for the left ear
+
 // AudioInputI2S2 earcupInputLeft; // Microphone inputs (Outside Mic and Error
 // Mic) - REPLACED BY BLUETOOTH
 // Custom I2S2 Slave Input (Teensy is Slave, QCC is Master)
-AudioInputSlaveI2S2 qccAudio; // Custom I2S2 Slave Input (QCC5125)
-AudioAnalyzePeak btPeak;      // Debug: Monitor signal level
-Mixer earcupMixerLeft;        // Shared mixer for all sources going to the left
+AudioAnalyzePeak btPeak; // Debug: Monitor signal level
+Mixer earcupMixerLeft;   // Shared mixer for all sources going to the left
 
 // System Managers
 WavPlayerManager wavManager(earcupMixerLeft);
@@ -73,14 +73,12 @@ AudioConnection audioOutLeft(earcupLeft, 0, stereoAudioOutput, 0);
 // Diagnostic globals
 uint32_t lastIsrCount = 0;
 
-void setup()
-{
+void setup() {
   Serial.begin(115200);
   delay(1000); // Give serial time to connect
 
   // Check for any breadcrumbs from a previous crash
-  if (CrashReport)
-  {
+  if (CrashReport) {
     Serial.println("--- CRASH DETECTED ---");
     Serial.print(CrashReport);
     Serial.println("----------------------");
@@ -99,22 +97,18 @@ void setup()
   audioShield.volume(1.0f);
 
   // Initialize the SD card for WAV playback
-  if (!SD.begin(BUILTIN_SDCARD))
-  {
+  if (!SD.begin(BUILTIN_SDCARD)) {
     Serial.println("Error: SD initialization FAILED");
-    while (true)
-    {
+    while (true) {
       delay(1000); // Halt if SD card is missing
     }
   }
 
-  if (!SD.exists("/recordings"))
-  {
+  if (!SD.exists("/recordings")) {
     SD.mkdir("/recordings");
   }
 
-  if (!SD.exists("/config"))
-  {
+  if (!SD.exists("/config")) {
     SD.mkdir("/config");
   }
 
@@ -122,29 +116,13 @@ void setup()
   wavManager.init();
   sineManager.init();
 
-  // Register Bluetooth Input (S/PDIF)
+  // Register Bluetooth Input
+  qccAudio.begin();
   int8_t btSlotL = earcupMixerLeft.addInput(qccAudio, 0); // Left Channel
-  int8_t btSlotR = earcupMixerLeft.addInput(qccAudio, 1); // Right Channel
-
-  if (btSlotL != -1)
-  {
+  if (btSlotL != -1) {
     earcupMixerLeft.setGain(btSlotL, 1.0f);
     earcupMixerLeft.setSourceName(btSlotL, "Bluetooth L");
-    Serial.printf("Bluetooth I2S2 Slave connected to Mixer Slot %d\n", btSlotL);
-  }
-  else
-  {
-    Serial.println("Error: Could not connect Bluetooth L to Mixer");
-  }
-
-  if (btSlotR != -1)
-  {
-    earcupMixerLeft.setGain(btSlotR, 1.0f);
-    earcupMixerLeft.setSourceName(btSlotR, "Bluetooth R");
-  }
-  else
-  {
-    Serial.println("Error: Could not connect Bluetooth R to Mixer");
+    Serial.printf("Bluetooth routed to Left Earcup (Slot %d)\n", btSlotL);
   }
 
   // Initialize MTP and expose SD card as a disk
@@ -163,9 +141,10 @@ void setup()
   // Default record gains (can be changed via serial)
   // recorder.getMixer().setGain(0, 1.0f);
   // recorder.getMixer().setGain(1, 1.0f);
-  // recorder.getMixer().setGain(2, 0.5f); // Background recording of system audio
+  // recorder.getMixer().setGain(2, 0.5f); // Background recording of system
+  // audio
 
-      Serial.println("========================================");
+  Serial.println("========================================");
   Serial.println("AERIS System Ready (I2S2 SLAVE MODE)");
   Serial.println("Wiring: Pin 3=LRCLK, Pin 4=BCLK, Pin 5=DATA");
   Serial.println("Type HELP for commands.");
@@ -175,8 +154,7 @@ void setup()
 
 #pragma region Main Loop
 
-void loop()
-{
+void loop() {
   // Check for incoming serial commands
   serialHandler.update();
 
@@ -191,14 +169,12 @@ void loop()
 
   // Debug: Print Bluetooth Peak Level every 500ms
   static uint32_t lastPrint = 0;
-  if (millis() - lastPrint > 500)
-  {
+  if (millis() - lastPrint > 500) {
     // Debug data format: Print raw Hex values from the I2S Input Loop
     // We need to access the public buffer or use a volatile pointer?
     // Actually, let's just use the peak detector for now.
     // If sound is "bad", peak might be clipping or tiny.
-    if (btPeak.available())
-    {
+    if (btPeak.available()) {
       Serial.printf("Peak: %.3f\n", btPeak.read());
     }
 

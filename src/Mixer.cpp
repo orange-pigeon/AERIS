@@ -111,11 +111,6 @@ void Mixer::update() {
 
   // Fetch audio data from all connected inputs
   for (uint8_t i = 0; i < MAX_INPUTS; i++) {
-    if (connections_[i] == nullptr) {
-      inBlocks[i] = nullptr;
-      continue;
-    }
-
     inBlocks[i] = receiveReadOnly(i);
     if (inBlocks[i])
       any = true;
