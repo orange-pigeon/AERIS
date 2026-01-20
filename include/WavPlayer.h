@@ -3,6 +3,7 @@
 #include "Mixer.h"
 #include <Arduino.h>
 #include <Audio.h>
+#include <initializer_list>
 
 /**
  * @class PausableAudioPlaySdWav
@@ -29,25 +30,33 @@ protected:
 };
 
 /**
- * @class WavPlayerManager
+ * @class WavPlayer
  * @brief Manages a pool of WAV players to allow concurrent playback and easy
  * control.
  *
  * This manager handles file selection, player assignment, and provides an
  * index-based interface for external commands.
  */
-class WavPlayerManager {
+class WavPlayer {
 public:
   static const int POOL_SIZE = 4; ///< Number of concurrent WAV players.
   static constexpr const char *BASE_DIR =
       "/recordings/"; ///< Base directory for WAV files.
 
-  WavPlayerManager(Mixer &outputMixer);
+  WavPlayer(Mixer &outputMixer);
 
   /**
    * @brief Initializes players and registers them with the output mixer.
    */
   void init();
+
+  /**
+   * @brief Configures which mixer slots this manager should use.
+   * Should be called before init().
+   * @param slots An initializer list of slot indices (e.g., {0, 1, 2, 3}). Use
+   * -1 for dynamic assignment.
+   */
+  void setMixerSlots(std::initializer_list<int8_t> slots);
 
   /**
    * @brief Starts playback of a WAV file on the first available player.
@@ -77,6 +86,11 @@ public:
    */
   void stopAll();
 
+  /**
+   * @brief Returns a reference to a specific player object.
+   */
+  PausableAudioPlaySdWav &getPlayer(int slot) { return players_[slot]; }
+
 private:
   Mixer &outputMixer_; ///< Reference to the main audio mixer.
   PausableAudioPlaySdWav
@@ -84,6 +98,8 @@ private:
   String filenames_[POOL_SIZE]; ///< Tracks which file is playing in each slot.
   int8_t
       mixerSlots_[POOL_SIZE]; ///< Maps manager slot index to mixer input index.
+  int8_t requestedSlots_[POOL_SIZE]; ///< User-requested mixer slots (-1 =
+                                     ///< dynamic).
 
   /**
    * @brief Finds the first slot currently playing a specific file.

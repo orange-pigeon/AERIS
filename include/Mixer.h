@@ -2,6 +2,7 @@
 
 #include <Arduino.h>
 #include <Audio.h>
+#include <cstdint>
 
 /**
  * @class Mixer
@@ -14,9 +15,15 @@
  */
 class Mixer : public AudioStream {
 public:
-  static constexpr uint8_t MAX_INPUTS = 10;
+  static constexpr uint8_t DEFAULT_MAX_INPUTS = 10;
 
-  Mixer();
+  Mixer(uint8_t numSlots = DEFAULT_MAX_INPUTS);
+  ~Mixer();
+
+  /**
+   * @brief Returns the number of slots in this mixer.
+   */
+  uint8_t getNumSlots() const { return numSlots_; }
 
   /**
    * @brief Connects an audio source to the next available mixer slot.
@@ -27,6 +34,16 @@ public:
   int8_t addInput(AudioStream &source, uint8_t sourceChannel = 0);
 
   /**
+   * @brief Connects an audio source to a specific mixer slot.
+   * @param slot The target mixer slot index.
+   * @param source The AudioStream source to connect.
+   * @param sourceChannel The channel index on the source (usually 0).
+   * @return True if successful, false if the slot is invalid or already
+   * occupied.
+   */
+  bool setInput(uint8_t slot, AudioStream &source, uint8_t sourceChannel = 0);
+
+  /**
    * @brief Disconnects the source at the specified slot and frees the index.
    * @param slot The mixer slot index to remove.
    */
@@ -34,17 +51,24 @@ public:
 
   /**
    * @brief Sets the gain for a specific input slot.
-   * @param slot Mixer slot index (0-7).
-   * @param gain Volume multiplier (0.0 to 1.0).
+   * @param slot Mixer slot index.
    */
   void setGain(uint8_t slot, float gain);
 
   /**
    * @brief Returns the current gain of a specific input slot.
-   * @param slot Mixer slot index (0-7).
+   * @param slot Mixer slot index.
    * @return Gain value (0.0 to 1.0).
    */
   float getGain(uint8_t slot) const;
+
+  /**
+   * @brief Returns the effective gain (user gain * ducking reduction) for a
+   * slot.
+   * @param slot Mixer slot index.
+   * @return Effective gain multiplier (0.0 to 1.0).
+   */
+  float getEffectiveGain(uint8_t slot) const;
 
   /**
    * @struct DuckingConfig
@@ -85,14 +109,14 @@ public:
 
   /**
    * @brief Assigns a human-readable name to a mixer slot.
-   * @param slot Mixer slot index (0-7).
+   * @param slot Mixer slot index.
    * @param name Descriptive name (e.g., "WavPlayer 0").
    */
   void setSourceName(uint8_t slot, const char *name);
 
   /**
    * @brief Retrieves the assigned name for a mixer slot.
-   * @param slot Mixer slot index (0-7).
+   * @param slot Mixer slot index.
    * @return The source name string, or empty string if none assigned.
    */
   const char *getSourceName(uint8_t slot) const;
@@ -101,7 +125,7 @@ public:
    * @brief Retrieves the source stream connected to a slot.
    */
   AudioStream *getSource(uint8_t slot) const {
-    if (slot >= MAX_INPUTS)
+    if (slot >= numSlots_)
       return nullptr;
     return sources_[slot];
   }
@@ -110,7 +134,7 @@ public:
    * @brief Retrieves the channel on the source stream connected to a slot.
    */
   uint8_t getSourceChannel(uint8_t slot) const {
-    if (slot >= MAX_INPUTS)
+    if (slot >= numSlots_)
       return 0;
     return sourceChannels_[slot];
   }
@@ -122,25 +146,26 @@ protected:
   void update() override;
 
 private:
-  audio_block_t
-      *inputQueueArray[MAX_INPUTS]; ///< Required by AudioStream for buffering.
+  uint8_t numSlots_;
 
-  AudioConnection
-      *connections_[MAX_INPUTS]; ///< Pointers to managed patchcords.
+  audio_block_t **inputQueueArray; ///< Required by AudioStream for buffering.
+  audio_block_t **inBlocks_; ///< Temporary storage for blocks during update.
 
-  volatile int32_t gainsQ15_[MAX_INPUTS]; ///< Internal gains stored in Q15
-                                          ///< fixed-point format.
+  AudioConnection **connections_; ///< Pointers to managed patchcords.
 
-  DuckingConfig duckingConfigs_[MAX_INPUTS]; ///< Ducking settings per channel.
+  volatile int32_t *gainsQ15_; ///< Internal gains stored in Q15
+                               ///< fixed-point format.
 
-  String sourceNames_[MAX_INPUTS]; ///< User-friendly labels for each input.
+  DuckingConfig *duckingConfigs_; ///< Ducking settings per channel.
 
-  AudioStream *sources_[MAX_INPUTS];   ///< Pointers to the original sources.
-  uint8_t sourceChannels_[MAX_INPUTS]; ///< Source channel indices.
+  String *sourceNames_; ///< User-friendly labels for each input.
+
+  AudioStream **sources_;   ///< Pointers to the original sources.
+  uint8_t *sourceChannels_; ///< Source channel indices.
 
   /**
    * @brief Finds the first unoccupied mixer slot.
-   * @return Index [0..7] or -1 if full.
+   * @return Index [0..N] or -1 if full.
    */
   int8_t findFreeSlot() const;
 

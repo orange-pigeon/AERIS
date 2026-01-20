@@ -1,8 +1,8 @@
 #include "Commander.h"
 #include <MTP_Teensy.h>
 
-Commander::Commander(Mixer &mixer, WavPlayerManager &wavManager,
-                     SinePlayerManager &sineManager, RecorderManager &recorder)
+Commander::Commander(Mixer &mixer, WavPlayer &wavManager,
+                     SinePlayer &sineManager, RecorderManager &recorder)
     : mixer_(mixer), wavManager_(wavManager), sineManager_(sineManager),
       recorder_(recorder) {}
 
@@ -167,7 +167,7 @@ void Commander::printHelp() {
 
 void Commander::printStatus() {
   Serial.println("Mixer Channel Status:");
-  for (int i = 0; i < Mixer::MAX_INPUTS; i++) {
+  for (int i = 0; i < mixer_.getNumSlots(); i++) {
     float g = mixer_.getGain(i);
     Serial.printf("  Slot %d: Gain=%.2f\n", i, g);
   }
@@ -195,7 +195,7 @@ void Commander::handleSine(char *args) {
 
 void Commander::handleSources() {
   Serial.println("Mixer Inputs:");
-  for (int i = 0; i < Mixer::MAX_INPUTS; i++) {
+  for (int i = 0; i < mixer_.getNumSlots(); i++) {
     const char *name = mixer_.getSourceName(i);
     float g = mixer_.getGain(i);
     if (strlen(name) > 0) {

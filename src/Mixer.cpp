@@ -1,7 +1,18 @@
 #include "Mixer.h"
 
-Mixer::Mixer() : AudioStream(MAX_INPUTS, inputQueueArray) {
-  for (uint8_t i = 0; i < MAX_INPUTS; i++) {
+Mixer::Mixer(uint8_t numSlots)
+    : AudioStream(numSlots, (inputQueueArray = new audio_block_t *[numSlots])),
+      numSlots_(numSlots) {
+  connections_ = new AudioConnection *[numSlots_];
+  gainsQ15_ = new int32_t[numSlots_];
+  duckingConfigs_ = new DuckingConfig[numSlots_];
+  sourceNames_ = new String[numSlots_];
+  sources_ = new AudioStream *[numSlots_];
+  sourceChannels_ = new uint8_t[numSlots_];
+  inBlocks_ = new audio_block_t *[numSlots_];
+
+  for (uint8_t i = 0; i < numSlots_; i++) {
+    inputQueueArray[i] = nullptr;
     connections_[i] = nullptr;
     sources_[i] = nullptr;
     sourceChannels_[i] = 0;
@@ -18,8 +29,21 @@ Mixer::Mixer() : AudioStream(MAX_INPUTS, inputQueueArray) {
   }
 }
 
+Mixer::~Mixer() {
+  clear(); // Delete all connections
+
+  delete[] inputQueueArray;
+  delete[] connections_;
+  delete[] gainsQ15_;
+  delete[] duckingConfigs_;
+  delete[] sourceNames_;
+  delete[] sources_;
+  delete[] sourceChannels_;
+  delete[] inBlocks_;
+}
+
 int8_t Mixer::findFreeSlot() const {
-  for (uint8_t i = 0; i < MAX_INPUTS; i++) {
+  for (uint8_t i = 0; i < numSlots_; i++) {
     if (connections_[i] == nullptr)
       return (int8_t)i;
   }
@@ -46,8 +70,27 @@ int8_t Mixer::addInput(AudioStream &source, uint8_t sourceChannel) {
   return slot;
 }
 
+bool Mixer::setInput(uint8_t slot, AudioStream &source, uint8_t sourceChannel) {
+  if (slot >= numSlots_)
+    return false;
+
+  if (connections_[slot] != nullptr)
+    return false; // Slot already in use
+
+  AudioNoInterrupts();
+  connections_[slot] =
+      new AudioConnection(source, sourceChannel, *this, (uint8_t)slot);
+
+  sources_[slot] = &source;
+  sourceChannels_[slot] = sourceChannel;
+  AudioInterrupts();
+
+  gainsQ15_[slot] = floatToQ15(1.0f); // Default to full volume
+  return true;
+}
+
 void Mixer::removeInput(uint8_t slot) {
-  if (slot >= MAX_INPUTS)
+  if (slot >= numSlots_)
     return;
 
   AudioNoInterrupts();
@@ -64,26 +107,33 @@ void Mixer::removeInput(uint8_t slot) {
 }
 
 void Mixer::clear() {
-  for (uint8_t i = 0; i < MAX_INPUTS; i++) {
+  for (uint8_t i = 0; i < numSlots_; i++) {
     removeInput(i);
   }
 }
 
 void Mixer::setGain(uint8_t slot, float gain) {
-  if (slot >= MAX_INPUTS)
+  if (slot >= numSlots_)
     return;
   gainsQ15_[slot] = floatToQ15(gain);
 }
 
 float Mixer::getGain(uint8_t slot) const {
-  if (slot >= MAX_INPUTS)
+  if (slot >= numSlots_)
     return 0.0f;
   return q15ToFloat(gainsQ15_[slot]);
 }
 
+float Mixer::getEffectiveGain(uint8_t slot) const {
+  if (slot >= numSlots_)
+    return 0.0f;
+  float baseGain = q15ToFloat(gainsQ15_[slot]);
+  return baseGain * duckingConfigs_[slot].currentScale;
+}
+
 void Mixer::setDucking(uint8_t targetSlot, int8_t controlSlot, float duckGain,
                        float threshold, float attackMs, float releaseMs) {
-  if (targetSlot >= MAX_INPUTS)
+  if (targetSlot >= numSlots_)
     return;
 
   // Approximate milliseconds per audio block (at 44.1kHz, 128 samples is
@@ -106,13 +156,12 @@ void Mixer::setDucking(uint8_t targetSlot, int8_t controlSlot, float duckGain,
 }
 
 void Mixer::update() {
-  audio_block_t *inBlocks[MAX_INPUTS];
   bool any = false;
 
   // Fetch audio data from all connected inputs
-  for (uint8_t i = 0; i < MAX_INPUTS; i++) {
-    inBlocks[i] = receiveReadOnly(i);
-    if (inBlocks[i])
+  for (uint8_t i = 0; i < numSlots_; i++) {
+    inBlocks_[i] = receiveReadOnly(i);
+    if (inBlocks_[i])
       any = true;
   }
 
@@ -122,12 +171,12 @@ void Mixer::update() {
   }
 
   // --- Step 1: Process Ducking Envelopes ---
-  for (uint8_t i = 0; i < MAX_INPUTS; i++) {
+  for (uint8_t i = 0; i < numSlots_; i++) {
     DuckingConfig &cfg = duckingConfigs_[i];
 
     // If ducking is configured for this channel
-    if (cfg.controlSlot >= 0 && cfg.controlSlot < MAX_INPUTS) {
-      audio_block_t *ctrlBlock = inBlocks[cfg.controlSlot];
+    if (cfg.controlSlot >= 0 && cfg.controlSlot < (int8_t)numSlots_) {
+      audio_block_t *ctrlBlock = inBlocks_[cfg.controlSlot];
       float peak = 0.0f;
 
       // Extract peak amplitude from the controlling channel
@@ -169,9 +218,9 @@ void Mixer::update() {
   audio_block_t *out = allocate();
   if (!out) {
     // Allocation failed, clean up received blocks
-    for (uint8_t i = 0; i < MAX_INPUTS; i++) {
-      if (inBlocks[i])
-        release(inBlocks[i]);
+    for (uint8_t i = 0; i < numSlots_; i++) {
+      if (inBlocks_[i])
+        release(inBlocks_[i]);
     }
     return;
   }
@@ -179,8 +228,8 @@ void Mixer::update() {
   // Initialize output buffer with silence
   memset(out->data, 0, sizeof(out->data));
 
-  for (uint8_t i = 0; i < MAX_INPUTS; i++) {
-    audio_block_t *b = inBlocks[i];
+  for (uint8_t i = 0; i < numSlots_; i++) {
+    audio_block_t *b = inBlocks_[i];
 
     // Skip if no block or gain is zero
     if (!b || gainsQ15_[i] == 0) {
@@ -212,13 +261,13 @@ void Mixer::update() {
 }
 
 void Mixer::setSourceName(uint8_t slot, const char *name) {
-  if (slot < MAX_INPUTS) {
+  if (slot < numSlots_) {
     sourceNames_[slot] = String(name);
   }
 }
 
 const char *Mixer::getSourceName(uint8_t slot) const {
-  if (slot < MAX_INPUTS) {
+  if (slot < numSlots_) {
     return sourceNames_[slot].c_str();
   }
   return "";

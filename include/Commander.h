@@ -2,8 +2,8 @@
 
 #include "Mixer.h"
 #include "RecorderManager.h"
-#include "SinePlayerManager.h"
-#include "WavPlayerManager.h"
+#include "SinePlayer.h"
+#include "WavPlayer.h"
 #include <Arduino.h>
 
 /**
@@ -20,8 +20,8 @@ public:
    * @brief Constructs the commander with references to necessary system
    * components.
    */
-  Commander(Mixer &mixer, WavPlayerManager &wavManager,
-            SinePlayerManager &sineManager, RecorderManager &recorder);
+  Commander(Mixer &mixer, WavPlayer &wavManager, SinePlayer &sineManager,
+            RecorderManager &recorder);
 
   /**
    * @brief Processes a single line of text into a command and arguments.
@@ -30,10 +30,10 @@ public:
   void handleCommand(const char *commandLine);
 
 private:
-  Mixer &mixer_;                   ///< Main audio mixer for gain and ducking.
-  WavPlayerManager &wavManager_;   ///< Manager for WAV file playback.
-  SinePlayerManager &sineManager_; ///< Manager for sine wave generation.
-  RecorderManager &recorder_;      ///< Manager for audio recording.
+  Mixer &mixer_;              ///< Main audio mixer for gain and ducking.
+  WavPlayer &wavManager_;     ///< Manager for WAV file playback.
+  SinePlayer &sineManager_;   ///< Manager for sine wave generation.
+  RecorderManager &recorder_; ///< Manager for audio recording.
 
   // Command handlers
   void handleGain(char *args);
